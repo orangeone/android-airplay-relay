@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="android-airplay-relay" default="usage" basedir="." xmlns:ivy="antlib:org.apache.ivy.ant">
+	<property name="prj.org" value="jp.orangeone"/>
+	<property name="prj.name" value="android-airplay-relay"/>
+	<property name="prj.title" value="Android AirPlay Relay"/>
+	<property name="prj.author" value="ou@orangeone.jp"/>
+	<property name="prj.site" value="github.com/orangeone/android-airplay-relay"/>
+	<property name="prj.version" value="1.0.0"/>
+	
+	<tstamp>
+		<format property="TODAY" pattern="yyyy-MM-dd HH:mm:ss"/>
+	</tstamp>
+	
+	<!-- get revision -->
+	<script language="javascript">
+		var ver = project.getProperty("VERSION");
+		if (ver == null) {
+			function run(cmd) {
+				var is = null;
+				try {
+					var p = java.lang.Runtime.getRuntime().exec(cmd);
+					is = p.getInputStream();
+					var br = new java.io.BufferedReader(new java.io.InputStreamReader(is));
+					var o = "";
+					var s;
+					while ((s = br.readLine()) != null) {
+						o += s.trim();
+					}
+					return o;
+				}
+				catch (e) {
+					java.lang.System.err.println(e);
+					return "";
+				}
+				finally {
+					if (is != null) {
+						is.close();
+					}
+				}
+			}
+			
+			var rev = "0";
+			if (new java.io.File(".git").exists()) {
+				var s = run("git rev-list --all --count");
+				if (s != "") {
+					rev = s;
+				}
+			}
+			else if (new java.io.File(".svn").exists()) {
+				var si = run("svn info . --xml");
+				if (si != "") {
+					var b = si.indexOf("revision=\"") + 10;
+					var e = si.indexOf("\"", b);
+					rev = si.substring(b, e);
+				}
+			}
+			project.setProperty("REVISION", rev);
+			project.setProperty("VERSION", project.getProperty("prj.version") + "." + rev);
+		}
+	</script>
+
+	<!-- usage -->
+	<target name="usage">
+		<echo message=""/>
+		<echo message="${prj.name}-${VERSION} build file"/>
+		<echo message="-----------------------------------"/>
+		<echo message=""/>
+		<echo message="Available targets are:"/>
+		<echo message=""/>
+		<echo message="all          --> dist &amp; test"/>
+		<echo message="build        --> Build the project (clean, cp-res, javac)"/>
+		<echo message="clean        --> Delete everything in the output directory"/>
+		<echo message="cp-res       --> Copy resource files to the classes directory"/>
+		<echo message="dist         --> Distribute project as a jar file (build, jar)"/>
+		<echo message="ivy-resolve  --> retreive dependencies"/>
+		<echo message="ivy-report   --> generates a report of dependencies"/>
+		<echo message="ivy-clean    --> clean the cache"/>
+		<echo message="jar          --> Make the project as a jar file"/>
+		<echo message="javac        --> Compile java source files"/>
+		<echo message="javadoc      --> Generate java documents"/>
+		<echo message="test         --> Test the project (build, test-run, test-report)"/>
+		<echo message="test-report  --> Build the test report"/>
+		<echo message="test-run     --> Run all junit test case"/>
+		<echo message=""/>
+	</target>
+
+	<!-- ivy -->
+	<target name="ivy-resolve" description="ivy --> retreive dependencies">
+		<ivy:retrieve conf="run" pattern="libs/[artifact](-[classifier]).[ext]"/>
+	</target>
+
+	<target name="ivy-report" depends="ivy-resolve" description="ivy --> generates a report of dependencies">
+		<ivy:report todir="lib/ivy" conf="run"/>
+	</target>
+
+	<target name="ivy-clean" description="ivy --> clean the cache">
+		<ivy:cleancache />
+	</target>
+	
+	<!-- build -->
+	<target name="clean" description="Delete everything in the output directory">
+		<delete dir="out"/>
+	</target>
+
+	<target name="cp-res" description="Copy resource files to the classes directory">
+		<mkdir dir="out/classes"/>
+		<delete>
+			<fileset dir="out/classes">
+				<exclude name="**/*.class"/>
+			</fileset>
+		</delete>
+		<copy todir="out/classes" preservelastmodified="true">
+			<fileset dir="src/java">
+				<exclude name="**/*.java"/>
+			</fileset>
+		</copy>
+	</target>
+
+	<target name="javac" description="Compile java source files">
+		<mkdir dir="out/classes"/>
+		<touch>
+			<fileset dir="src/java" includes="**/package-info.java"/>
+		</touch>
+		<javac destdir="out/classes" encoding="UTF-8" source="1.6" target="1.6" debug="true" includeAntRuntime="false">
+			<src path="src/java"/>
+			<classpath refid="main.cp"/>
+		</javac>
+	</target>
+
+	<target name="build" depends="clean, cp-res, javac" description="Build the project"/>
+
+
+	<!-- dist -->
+	<target name="javadoc" description="Generate java documents">
+		<delete dir="out/javadoc"/>
+		<javadoc destdir="out/javadoc"
+			locale="en_US" docencoding="UTF-8" charset="UTF-8"
+			use="true" splitindex="true"
+			windowTitle="${prj.title} ${prj.version} API"
+			doctitle="${prj.title} ${prj.version} API"
+			footer="&lt;a href=&quot;http://${prj.site}&quot;&gt;${prj.site}&lt;/a&gt;"
+		>
+			<fileset dir="src/java"/>
+			<classpath refid="main.cp"/>
+		</javadoc>
+	</target>
+
+	<target name="jar" description="Make project as a jar file">
+		<delete>
+			<fileset dir="out" includes="*.jar"/>
+		</delete>
+		<jar destfile="out/${prj.name}-${VERSION}.jar">
+			<manifest>
+				<attribute name="Created-By" value="${prj.author}"/>
+				<attribute name="Built-By" value="${prj.author}"/>
+				<attribute name="Built-Date" value="${TODAY}"/>
+				<attribute name="Implementation-Title" value="${prj.title}"/>
+				<attribute name="Implementation-Version" value="${VERSION}"/> 
+				<attribute name="Implementation-Vendor" value="${prj.site}"/>
+			</manifest>
+			<fileset dir="out/classes"/>
+		</jar>
+		<jar destfile="out/${prj.name}-${VERSION}-sources.jar">
+			<manifest>
+				<attribute name="Created-By" value="${prj.author}"/>
+				<attribute name="Built-By" value="${prj.author}"/>
+				<attribute name="Built-Date" value="${TODAY}"/>
+				<attribute name="Implementation-Title" value="${prj.title}"/>
+				<attribute name="Implementation-Version" value="${VERSION}"/> 
+				<attribute name="Implementation-Vendor" value="${prj.site}"/>
+			</manifest>
+			<fileset dir="src/java"/>
+		</jar>
+		<jar destfile="out/${prj.name}-${VERSION}-javadoc.jar">
+			<manifest>
+				<attribute name="Created-By" value="${prj.author}"/>
+				<attribute name="Built-By" value="${prj.author}"/>
+				<attribute name="Built-Date" value="${TODAY}"/>
+				<attribute name="Implementation-Title" value="${prj.title}"/>
+				<attribute name="Implementation-Version" value="${VERSION}"/>
+				<attribute name="Implementation-Vendor" value="${prj.site}"/>
+			</manifest>
+			<fileset dir="out/javadoc"/>
+		</jar>
+	</target>
+
+	<target name="dist" depends="ivy-report, build, javadoc, jar" description="Distribute project as a jar file"/>
+
+	<!-- test -->
+	<target name="test-run" description="Run all junit test case">
+		<mkdir dir="out/test-report"/>
+
+		<junit printsummary="yes" haltonfailure="no" fork="true" forkmode="once">
+			<classpath refid="junit.cp"/>
+			<batchtest fork="yes" todir="out/test-report">
+				<formatter type="xml"/>
+				<fileset dir="src/java">
+					<include name="**/*Test.java"/>
+				</fileset>
+			</batchtest>
+		</junit>
+	</target>
+
+	<target name="test-report" description="Build the test report">
+		<junitreport todir="out/test-report">
+			<fileset dir="out/test-report">
+				<include name="TEST-*.xml"/>
+			</fileset>
+			<report format="frames" todir="out/test-report"/>
+		</junitreport>
+	</target>
+
+	<target name="test"
+		depends="build, test-run, test-report"
+		description="Test the project (test-build, test-run, test-report)"/>
+
+	<!-- all -->
+	<target name="all" depends="dist, test"/>
+</project>

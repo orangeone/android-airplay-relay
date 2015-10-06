@@ -1,0 +1,14 @@
+<ivy-module version="2.0">
+	<info organisation="${prj.org}" module="${prj.name}" revision="${prj.version}"/>
+	<configurations>
+		<conf name="run" visibility="public" />
+	</configurations>
+	<publications>
+		<artifact name="${prj.name}" type="jar" conf="run" ext="jar" />
+	</publications>
+	<dependencies>
+		<!-- RUN -->
+		<dependency org="com.foolite" name="panda-android" rev="1.1.0" conf="run->master,sources" />
+		<dependency org="javax.jmdns" name="jmdns" rev="3.4.1" conf="run->master" />
+	</dependencies>
+</ivy-module>
